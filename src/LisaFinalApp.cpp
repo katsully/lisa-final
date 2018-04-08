@@ -4,13 +4,11 @@
 #include "Kinect2.h"
 #include "cinder/params/Params.h"
 #include "cinder/osc/Osc.h"
-#include "cinder/Log.h"
 
 
 using namespace ci;
 using namespace ci::app;
 using namespace std;
-using namespace ci::log;
 
 #define USE_UDP 1
 
@@ -31,10 +29,6 @@ public:
 	void update() override;
 	void draw() override;
 	void shutdown();
-
-	//! enableFileLogging will enable logging to a given file.
-	//! This file will not rotate, but you can control the file appending.
-	void enableFileLogging();
 
 	Sender mSender;
 
@@ -62,11 +56,12 @@ private:
 	vec3 numB4;
 	vec3 numB5;
 
-	float dist1;
-	float dist2;
-	float dist3;
-	float dist4;
-	float dist5;
+	// distance between two people
+	float dist1 = 0.0;
+	float dist2 = 0.0;
+	float dist3 = 0.0;
+	float dist4 = 0.0;
+	float dist5 = 0.0;
 
 	// points for 1st person pentagon
 	vec2 pointA1;
@@ -129,15 +124,6 @@ void LisaFinalApp::setup()
 #if ! USE_UDP
 	mSender.connect();
 #endif
-
-	enableFileLogging();
-}
-
-void LisaFinalApp::enableFileLogging()
-{
-	// create logger file
-	log::makeLogger<log::LoggerFile>("/tmp/cinder/cinder.log", true);
-	CI_LOG_V("test");
 }
 
 void LisaFinalApp::mouseDown(MouseEvent event)
