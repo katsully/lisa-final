@@ -4,6 +4,8 @@
 #include "Kinect2.h"
 #include "cinder/params/Params.h"
 #include "cinder/osc/Osc.h"
+#include <fstream>
+#include <ctime>
 
 
 using namespace ci;
@@ -79,6 +81,8 @@ private:
 
 	bool mFullScreen = true;
 
+	ofstream myfile;
+
 };
 
 LisaFinalApp::LisaFinalApp() : mSender(8000, destinationHost, destinationPort) {
@@ -124,6 +128,23 @@ void LisaFinalApp::setup()
 #if ! USE_UDP
 	mSender.connect();
 #endif
+
+	std::time_t t = std::time(0);	// get time now
+	std::tm* now = std::localtime(&t);
+	console() << t << endl;
+
+	console() << (now->tm_year + 1900) << '-'
+		<< (now->tm_mon + 1) << '-'
+		<< now->tm_mday
+		<< now->tm_hour
+		<< now->tm_min
+		<< endl;
+
+	// set up logging file
+	std::string file_name = "hug_data_" + std::to_string(now->tm_mon + 1) + "-" + std::to_string(now->tm_mday) + "-" + std::to_string(now->tm_hour) + "-" + std::to_string(now->tm_min) + 
+		".csv";
+	console() << file_name << endl;
+	myfile.open(file_name);
 }
 
 void LisaFinalApp::mouseDown(MouseEvent event)
