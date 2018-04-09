@@ -16,12 +16,16 @@ using namespace std;
 
 #if USE_UDP
 using Sender = osc::SenderUdp;
+using Receiver = osc::ReceiverUdp;
+using protocol = asio::ip::udp;
 #else
-using sender = osc::SenderTcp;
+using Sender = osc::SenderTcp;
+using Receiver = osc::ReceiverTcp;
+using protocol = asio::ip::tcp;
 #endif
 
 const std::string destinationHost = "127.0.0.1";
-const uint16_t destinationPort = 10001;
+const uint16_t destinationPort = 8000;
 
 class LisaFinalApp : public App {
 public:
@@ -33,6 +37,7 @@ public:
 	void shutdown();
 
 	Sender mSender;
+	Receiver mReceiver;
 
 private:
 	Kinect2::DeviceRef mDevice;
@@ -82,10 +87,11 @@ private:
 	bool mFullScreen = true;
 
 	ofstream myfile;
+	bool mRecording = false;
 
 };
 
-LisaFinalApp::LisaFinalApp() : mSender(8000, destinationHost, destinationPort) {
+LisaFinalApp::LisaFinalApp() : App(), mReceiver(9000), mSender(8000, destinationHost, destinationPort) {
 	mDevice = Kinect2::Device::create();
 	mDevice->start();
 	mDevice->connectBodyEventHandler([&](const Kinect2::BodyFrame frame) {
@@ -123,28 +129,48 @@ void LisaFinalApp::setup()
 
 	mParams->addParam("Full Screen", &mFullScreen).updateFn([this] { setFullScreen(mFullScreen); });
 
-	// set up OSC
-	mSender.bind();
-#if ! USE_UDP
-	mSender.connect();
-#endif
-
 	std::time_t t = std::time(0);	// get time now
 	std::tm* now = std::localtime(&t);
-	console() << t << endl;
-
-	console() << (now->tm_year + 1900) << '-'
-		<< (now->tm_mon + 1) << '-'
-		<< now->tm_mday
-		<< now->tm_hour
-		<< now->tm_min
-		<< endl;
 
 	// set up logging file
-	std::string file_name = "hug_data_" + std::to_string(now->tm_mon + 1) + "-" + std::to_string(now->tm_mday) + "-" + std::to_string(now->tm_hour) + "-" + std::to_string(now->tm_min) + 
+	std::string file_name = "hug_data_" + std::to_string(now->tm_mon + 1) + "-" + std::to_string(now->tm_mday) + "-" + std::to_string(now->tm_hour) + "-" + std::to_string(now->tm_min) +
 		".csv";
-	console() << file_name << endl;
 	myfile.open(file_name);
+	myfile << "Kat's data\n";
+	myfile << "vertex 1,";
+	myfile << "vertex 2,";
+	myfile << "vertex 3,";
+	myfile << "vertex 4,";
+	myfile << "vertex 5,";
+	myfile << "\n";
+
+	// set up OSC
+	mSender.bind();
+	mReceiver.bind();
+	mReceiver.listen(
+		[](asio::error_code error, protocol::endpoint endpoint) -> bool {
+		if (error) {
+			return false;
+		}
+		else
+			return true;
+	});
+	mReceiver.setListener("/1/toggle1", [&](const osc::Message &message) {
+		console() << message << endl;
+		if (message[0].flt() == 1.0) {
+			mRecording = true;
+		}
+		else if (message[0].flt() == 0.0) {
+			mRecording = false;
+		}
+	
+	});
+	mReceiver.setListener("/2/push1", [&](const osc::Message &message) {
+		if (message[0].flt() == 1.0) {
+			myfile << "HUG\n";
+		}
+	});
+
 }
 
 void LisaFinalApp::mouseDown(MouseEvent event)
@@ -229,6 +255,16 @@ void LisaFinalApp::draw()
 					dist3 = sqrt(math<float>::pow(numA3.x - numB3.x, 2) + math<float>::pow(numA3.y - numB3.y, 2) + math<float>::pow(numA3.z - numB3.z, 2));
 					dist4 = sqrt(math<float>::pow(numA4.x - numB4.x, 2) + math<float>::pow(numA4.y - numB4.y, 2) + math<float>::pow(numA4.z - numB4.z, 2));
 					dist5 = sqrt(math<float>::pow(numA5.x - numB5.x, 2) + math<float>::pow(numA5.y - numB5.y, 2) + math<float>::pow(numA5.z - numB5.z, 2));
+
+					if (mRecording) {
+						myfile << to_string(dist1) + ",";
+						myfile << to_string(dist2) + ",";
+						myfile << to_string(dist3) + ",";
+						myfile << to_string(dist4) + ",";
+						myfile << to_string(dist5) + ",";
+						myfile << "\n";
+					}
+
 				}
 
 				for (const auto& joint : map) {
@@ -323,6 +359,34 @@ void LisaFinalApp::draw()
 						gl::drawLine(pointB5, pointB3);
 						gl::drawLine(pointB3, pointB1);
 					}
+
+					// draw pentagon for 3rd person
+					else if (counter == 1) {
+						gl::color(0, 0, 1);
+
+						pointB1 = (headPos + shoulderPos) / vec2(2);
+						gl::drawSolidCircle(pointB1, 5.0f, 32);
+
+
+						pointB2 = (shoulderRPos + elbowRPos + wristRPos + handRPos) / vec2(4);
+						gl::drawSolidCircle(pointB2, 5.0f, 32);
+
+
+						pointB3 = (shoulderLPos + elbowLPos + wristLPos + handLPos) / vec2(4);
+						gl::drawSolidCircle(pointB3, 5.0f, 32);
+
+						pointB4 = (hipRPos + kneeRPos + ankleRPos + footRPos) / vec2(4);
+						gl::drawSolidCircle(pointB4, 5.0f, 32);
+
+						pointB5 = (hipLPos + kneeLPos + ankleLPos + footLPos) / vec2(4);
+						gl::drawSolidCircle(pointB5, 5.0f, 32);
+
+						gl::drawLine(pointB1, pointB2);
+						gl::drawLine(pointB2, pointB4);
+						gl::drawLine(pointB4, pointB5);
+						gl::drawLine(pointB5, pointB3);
+						gl::drawLine(pointB3, pointB1);
+					}
 				}
 				drawHand(body.getHandLeft(), mDevice->mapCameraToDepth(body.getJointMap().at(JointType_HandLeft).getPosition()));
 				drawHand(body.getHandRight(), mDevice->mapCameraToDepth(body.getJointMap().at(JointType_HandRight).getPosition()));
@@ -338,6 +402,7 @@ void LisaFinalApp::draw()
 
 void LisaFinalApp::shutdown() {
 	mDevice->stop();
+	myfile.close();
 }
 
 CINDER_APP(LisaFinalApp, RendererGl)
