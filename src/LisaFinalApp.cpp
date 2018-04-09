@@ -24,6 +24,7 @@ using Receiver = osc::ReceiverTcp;
 using protocol = asio::ip::tcp;
 #endif
 
+// TODO: this should be in a json file (along with the vertex thresholds)
 const std::string destinationHost = "172.16.251.253";
 const uint16_t destinationPort = 8000;
 
@@ -104,6 +105,8 @@ private:
 
 };
 
+// TODO: if osc says they're touching and no data - prob a hug
+// TODO: only run touching alogirthm when get osc data that two people are touching, then figure out whether its hugging, hand holding, or other
 LisaFinalApp::LisaFinalApp() : App(), mReceiver(9000), mSender(8000, destinationHost, destinationPort) {
 	mDevice = Kinect2::Device::create();
 	mDevice->start();
@@ -142,6 +145,8 @@ void LisaFinalApp::setup()
 
 	mParams->addParam("Full Screen", &mFullScreen).updateFn([this] { setFullScreen(mFullScreen); });
 
+	// TODO - add param to hide param window (with hot key to bring it back) & button to quit
+
 	std::time_t t = std::time(0);	// get time now
 	std::tm* now = std::localtime(&t);
 
@@ -168,6 +173,8 @@ void LisaFinalApp::setup()
 		else
 			return true;
 	});
+	// TODO: get OSC from Todd when people are touching, only run algorith then!
+	// when touching determing if hugging or holding hands or OTHER
 	mReceiver.setListener("/1/toggle1", [&](const osc::Message &message) {
 		console() << message << endl;
 		if (message[0].flt() == 1.0) {
@@ -186,6 +193,26 @@ void LisaFinalApp::setup()
 	mReceiver.setListener("/2/push2", [&](const osc::Message &message) {
 		if (message[0].flt() == 1.0) {
 			myfile << "HUG STOP\n";
+		}
+	});
+	mReceiver.setListener("/2/push3", [&](const osc::Message &message) {
+		if (message[0].flt() == 1.0) {
+			myfile << "HAND START\n";
+		}
+	});
+	mReceiver.setListener("/2/push4", [&](const osc::Message &message) {
+		if (message[0].flt() == 1.0) {
+			myfile << "HAND STOP\n";
+		}
+	});
+	mReceiver.setListener("/2/push5", [&](const osc::Message &message) {
+		if (message[0].flt() == 1.0) {
+			myfile << "OTHER START\n";
+		}
+	});
+	mReceiver.setListener("/2/push6", [&](const osc::Message &message) {
+		if (message[0].flt() == 1.0) {
+			myfile << "OTHER STOP\n";
 		}
 	});
 
@@ -274,6 +301,8 @@ void LisaFinalApp::draw()
 					dist4 = sqrt(math<float>::pow(numA4.x - numB4.x, 2) + math<float>::pow(numA4.y - numB4.y, 2) + math<float>::pow(numA4.z - numB4.z, 2));
 					dist5 = sqrt(math<float>::pow(numA5.x - numB5.x, 2) + math<float>::pow(numA5.y - numB5.y, 2) + math<float>::pow(numA5.z - numB5.z, 2));
 
+					// TODO: BIG text to indicate whether it thinks its hugging or not
+
 					if (mRecording) {
 						myfile << to_string(dist1) + ",";
 						myfile << to_string(dist2) + ",";
@@ -285,6 +314,9 @@ void LisaFinalApp::draw()
 
 				}
 
+				// TODO: calculate distances between A&C and B&C (once a hug is detected between the three break)
+				// TODO: there should be a function that takes two lists of 5 (representing the pentagrams of two people) to detect if they're hugging or not
+
 				if (counter == 2) {
 					numC1 = (map.at(JointType_Head).getPosition() + map.at(JointType_SpineShoulder).getPosition()) / vec3(2);
 					numC2 = (map.at(JointType_ShoulderRight).getPosition() + map.at(JointType_ElbowRight).getPosition() + map.at(JointType_WristRight).getPosition() + map.at(JointType_HandRight).getPosition()) / vec3(4);
@@ -294,7 +326,6 @@ void LisaFinalApp::draw()
 				}
 
 				for (const auto& joint : map) {
-					//	console() << joint.first << endl;
 					if (joint.second.getTrackingState() == TrackingState::TrackingState_Tracked) {
 						vec2 pos(mDevice->mapCameraToDepth(joint.second.getPosition()));
 						if (mDrawSkeleton) {
