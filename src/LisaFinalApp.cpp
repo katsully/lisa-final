@@ -180,7 +180,12 @@ void LisaFinalApp::setup()
 	});
 	mReceiver.setListener("/2/push1", [&](const osc::Message &message) {
 		if (message[0].flt() == 1.0) {
-			myfile << "HUG\n";
+			myfile << "HUG START\n";
+		}
+	});
+	mReceiver.setListener("/2/push2", [&](const osc::Message &message) {
+		if (message[0].flt() == 1.0) {
+			myfile << "HUG STOP\n";
 		}
 	});
 
