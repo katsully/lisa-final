@@ -25,8 +25,8 @@ using protocol = asio::ip::tcp;
 #endif
 
 // TODO: this should be in a json file (along with the vertex thresholds)
-const std::string destinationHost = "172.16.251.253";
-const uint16_t destinationPort = 8000;
+const std::string destinationHost = "127.0.0.1";
+const uint16_t destinationPort = 8005;
 
 class LisaFinalApp : public App {
 public:
@@ -36,6 +36,8 @@ public:
 	void update() override;
 	void draw() override;
 	void shutdown();
+
+	void keyDown(KeyEvent event) override;
 
 	Sender mSender;
 	Receiver mReceiver;
@@ -102,12 +104,12 @@ private:
 
 	ofstream myfile;
 	bool mRecording = false;
-
+	bool mTouching = false;
 };
 
 // TODO: if osc says they're touching and no data - prob a hug
 // TODO: only run touching alogirthm when get osc data that two people are touching, then figure out whether its hugging, hand holding, or other
-LisaFinalApp::LisaFinalApp() : App(), mReceiver(9000), mSender(8000, destinationHost, destinationPort) {
+LisaFinalApp::LisaFinalApp() : App(), mReceiver(8010), mSender(8000, destinationHost, destinationPort) {
 	mDevice = Kinect2::Device::create();
 	mDevice->start();
 	mDevice->connectBodyEventHandler([&](const Kinect2::BodyFrame frame) {
@@ -175,12 +177,24 @@ void LisaFinalApp::setup()
 	});
 	// TODO: get OSC from Todd when people are touching, only run algorith then!
 	// when touching determing if hugging or holding hands or OTHER
+	mReceiver.setListener("/touch", [&](const osc::Message &message) {
+		console() << message << endl;
+		if (message[0].int32() == 1.0) {
+			mTouching = true;
+			console() << "mTouching = " << mTouching << endl;
+		}
+		else if (message[0].int32() == 0.0) {
+			mTouching = false;
+			console() << "mTouching = " << mTouching << endl;
+		}
+
+	});
 	mReceiver.setListener("/1/toggle1", [&](const osc::Message &message) {
 		console() << message << endl;
-		if (message[0].flt() == 1.0) {
+		if (message[0].int32() == 1) {
 			mRecording = true;
 		}
-		else if (message[0].flt() == 0.0) {
+		else if (message[0].int32() == 0) {
 			mRecording = false;
 		}
 	
@@ -228,6 +242,19 @@ void LisaFinalApp::mouseDown(MouseEvent event)
 
 void LisaFinalApp::update()
 {
+}
+
+void LisaFinalApp::keyDown(KeyEvent event) {
+	if (event.getChar() == 'a') {
+		osc::Message msg("/Case_1");
+		msg.append(1);
+		mSender.send(msg);
+	}
+	else if (event.getChar() == '2') {
+		osc::Message msg("/Case_2");
+		msg.append(2);
+		mSender.send(msg);
+	}
 }
 
 void LisaFinalApp::draw()
