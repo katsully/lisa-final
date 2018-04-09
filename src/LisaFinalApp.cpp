@@ -24,7 +24,7 @@ using Receiver = osc::ReceiverTcp;
 using protocol = asio::ip::tcp;
 #endif
 
-const std::string destinationHost = "127.0.0.1";
+const std::string destinationHost = "172.16.251.253";
 const uint16_t destinationPort = 8000;
 
 class LisaFinalApp : public App {
@@ -63,6 +63,12 @@ private:
 	vec3 numB4;
 	vec3 numB5;
 
+	vec3 numC1;
+	vec3 numC2;
+	vec3 numC3;
+	vec3 numC4;
+	vec3 numC5;
+
 	// distance between two people
 	float dist1 = 0.0;
 	float dist2 = 0.0;
@@ -83,6 +89,13 @@ private:
 	vec2 pointB3;
 	vec2 pointB4;
 	vec2 pointB5;
+
+	// points for 3rd person pentagon
+	vec2 pointC1;
+	vec2 pointC2;
+	vec2 pointC3;
+	vec2 pointC4;
+	vec2 pointC5;
 
 	bool mFullScreen = true;
 
@@ -267,6 +280,14 @@ void LisaFinalApp::draw()
 
 				}
 
+				if (counter == 2) {
+					numC1 = (map.at(JointType_Head).getPosition() + map.at(JointType_SpineShoulder).getPosition()) / vec3(2);
+					numC2 = (map.at(JointType_ShoulderRight).getPosition() + map.at(JointType_ElbowRight).getPosition() + map.at(JointType_WristRight).getPosition() + map.at(JointType_HandRight).getPosition()) / vec3(4);
+					numC3 = (map.at(JointType_ShoulderLeft).getPosition() + map.at(JointType_ElbowLeft).getPosition() + map.at(JointType_WristLeft).getPosition() + map.at(JointType_HandLeft).getPosition()) / vec3(4);
+					numC4 = (map.at(JointType_HipRight).getPosition() + map.at(JointType_KneeRight).getPosition() + map.at(JointType_AnkleRight).getPosition() + map.at(JointType_FootRight).getPosition()) / vec3(4);
+					numC5 = (map.at(JointType_HipLeft).getPosition() + map.at(JointType_KneeLeft).getPosition() + map.at(JointType_AnkleLeft).getPosition() + map.at(JointType_FootLeft).getPosition()) / vec3(4);
+				}
+
 				for (const auto& joint : map) {
 					//	console() << joint.first << endl;
 					if (joint.second.getTrackingState() == TrackingState::TrackingState_Tracked) {
@@ -306,6 +327,7 @@ void LisaFinalApp::draw()
 					gl::lineWidth(5.0f);
 
 					// draw pentagon for 1st person
+					// TODO: for if statements, only put colors, then have one block of code for points, circles, and lines, don't need pointA1, pointB1, pointC1, only point1
 					if (counter == 0) {
 						gl::color(1, 0, 0);
 
@@ -361,31 +383,31 @@ void LisaFinalApp::draw()
 					}
 
 					// draw pentagon for 3rd person
-					else if (counter == 1) {
+					else if (counter == 2) {
 						gl::color(0, 0, 1);
 
-						pointB1 = (headPos + shoulderPos) / vec2(2);
-						gl::drawSolidCircle(pointB1, 5.0f, 32);
+						pointC1 = (headPos + shoulderPos) / vec2(2);
+						gl::drawSolidCircle(pointC1, 5.0f, 32);
 
 
-						pointB2 = (shoulderRPos + elbowRPos + wristRPos + handRPos) / vec2(4);
-						gl::drawSolidCircle(pointB2, 5.0f, 32);
+						pointC2 = (shoulderRPos + elbowRPos + wristRPos + handRPos) / vec2(4);
+						gl::drawSolidCircle(pointC2, 5.0f, 32);
 
 
-						pointB3 = (shoulderLPos + elbowLPos + wristLPos + handLPos) / vec2(4);
-						gl::drawSolidCircle(pointB3, 5.0f, 32);
+						pointC3 = (shoulderLPos + elbowLPos + wristLPos + handLPos) / vec2(4);
+						gl::drawSolidCircle(pointC3, 5.0f, 32);
 
-						pointB4 = (hipRPos + kneeRPos + ankleRPos + footRPos) / vec2(4);
-						gl::drawSolidCircle(pointB4, 5.0f, 32);
+						pointC4 = (hipRPos + kneeRPos + ankleRPos + footRPos) / vec2(4);
+						gl::drawSolidCircle(pointC4, 5.0f, 32);
 
-						pointB5 = (hipLPos + kneeLPos + ankleLPos + footLPos) / vec2(4);
-						gl::drawSolidCircle(pointB5, 5.0f, 32);
+						pointC5 = (hipLPos + kneeLPos + ankleLPos + footLPos) / vec2(4);
+						gl::drawSolidCircle(pointC5, 5.0f, 32);
 
-						gl::drawLine(pointB1, pointB2);
-						gl::drawLine(pointB2, pointB4);
-						gl::drawLine(pointB4, pointB5);
-						gl::drawLine(pointB5, pointB3);
-						gl::drawLine(pointB3, pointB1);
+						gl::drawLine(pointC1, pointC2);
+						gl::drawLine(pointC2, pointC4);
+						gl::drawLine(pointC4, pointC5);
+						gl::drawLine(pointC5, pointC3);
+						gl::drawLine(pointC3, pointC1);
 					}
 				}
 				drawHand(body.getHandLeft(), mDevice->mapCameraToDepth(body.getJointMap().at(JointType_HandLeft).getPosition()));
