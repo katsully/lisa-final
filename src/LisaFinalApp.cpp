@@ -4,6 +4,7 @@
 #include "Kinect2.h"
 #include "cinder/params/Params.h"
 #include "cinder/osc/Osc.h"
+#include "jsoncpp/json.h"
 #include <fstream>
 #include <ctime>
 
@@ -101,10 +102,16 @@ private:
 	vec2 pointC5;
 
 	bool mFullScreen = true;
+	bool mShowParams = true;
 
 	ofstream myfile;
 	bool mRecording = false;
 	bool mTouching = false;
+
+	Json::Value mData;	// to store params
+	Json::Reader mReader;	// this will read the json file where the params are stored and parse it to mData
+	Json::StyledStreamWriter writer;	// write json values back to json file
+	string mGuiParamsFilePath;	// string representing the path to the json gui params file
 };
 
 // TODO: if osc says they're touching and no data - prob a hug
@@ -146,23 +153,24 @@ void LisaFinalApp::setup()
 	mParams->addSeparator();
 
 	mParams->addParam("Full Screen", &mFullScreen).updateFn([this] { setFullScreen(mFullScreen); });
+	mParams->addParam("Show Params", &mShowParams).key("p");
 
-	// TODO - add param to hide param window (with hot key to bring it back) & button to quit
+	// TODO - param button to quit
 
 	std::time_t t = std::time(0);	// get time now
 	std::tm* now = std::localtime(&t);
 
-	// set up logging file
-	std::string file_name = "hug_data_" + std::to_string(now->tm_mon + 1) + "-" + std::to_string(now->tm_mday) + "-" + std::to_string(now->tm_hour) + "-" + std::to_string(now->tm_min) +
-		".csv";
-	myfile.open(file_name);
-	myfile << "Kat's data\n";
-	myfile << "vertex 1,";
-	myfile << "vertex 2,";
-	myfile << "vertex 3,";
-	myfile << "vertex 4,";
-	myfile << "vertex 5,";
-	myfile << "\n";
+	//// set up logging file
+	//std::string file_name = "hug_data_" + std::to_string(now->tm_mon + 1) + "-" + std::to_string(now->tm_mday) + "-" + std::to_string(now->tm_hour) + "-" + std::to_string(now->tm_min) +
+	//	".csv";
+	//myfile.open(file_name);
+	//myfile << "Kat's data\n";
+	//myfile << "vertex 1,";
+	//myfile << "vertex 2,";
+	//myfile << "vertex 3,";
+	//myfile << "vertex 4,";
+	//myfile << "vertex 5,";
+	//myfile << "\n";
 
 	// set up OSC
 	mSender.bind();
@@ -482,7 +490,9 @@ void LisaFinalApp::draw()
 	}
 
 	// draw parameters interface
-	mParams->draw();
+	if (mShowParams) {
+		mParams->draw();
+	}
 }
 
 void LisaFinalApp::shutdown() {
