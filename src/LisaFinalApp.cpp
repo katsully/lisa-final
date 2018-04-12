@@ -32,12 +32,9 @@ class LisaFinalApp : public App {
 public:
 	LisaFinalApp();
 	void setup() override;
-	void mouseDown(MouseEvent event) override;
 	void update() override;
 	void draw() override;
 	void shutdown();
-
-	void keyDown(KeyEvent event) override;
 
 	Sender mSender;
 	Receiver mReceiver;
@@ -117,10 +114,10 @@ void LisaFinalApp::setup()
 	setFullScreen(mFullScreen);
 
 	// create a parameter interface and name it
-	mParams = params::InterfaceGl::create(getWindow(), "App parameters", toPixels(ivec2(200, 400)));
+	mParams = params::InterfaceGl::create(getWindow(), "App Parameters", toPixels(ivec2(200, 400)));
 
 	// setup parameters
-	mParams->addParam("Draw background", &mDrawBackground);
+	mParams->addParam("Draw Background", &mDrawBackground);
 	mParams->addParam("Draw Skeleton", &mDrawSkeleton);
 	mParams->addParam("Draw Pentagon", &mDrawPentagon);
 
@@ -154,21 +151,17 @@ void LisaFinalApp::setup()
 			return true;
 	});
 	mReceiver.setListener("/touch", [&](const osc::Message &message) {
-		console() << message << endl;
 		if (message[0].int32() == 1.0) {
 			mTouching = true;
-			console() << "mTouching = " << mTouching << endl;
 		}
 		else if (message[0].int32() == 0.0) {
 			mTouching = false;
 			// reset counter 
 			touchingCounter = 0;
-			console() << "mTouching = " << mTouching << endl;
 		}
 
 	});
 	mReceiver.setListener("/1/toggle1", [&](const osc::Message &message) {
-		console() << message << endl;
 		if (message[0].int32() == 1) {
 			mRecording = true;
 		}
@@ -212,27 +205,8 @@ void LisaFinalApp::setup()
 
 }
 
-void LisaFinalApp::mouseDown(MouseEvent event)
-{
-	//test osc
-	osc::Message msg("/hug");
-	msg.append("hug");
-	mSender.send(msg);
-}
-
 void LisaFinalApp::update()
 {
-}
-
-void LisaFinalApp::keyDown(KeyEvent event) {
-	if (event.getChar() == 'a') {
-		
-	}
-	else if (event.getChar() == '2') {
-		osc::Message msg("/Case_2");
-		msg.append(2);
-		mSender.send(msg);
-	}
 }
 
 void LisaFinalApp::draw()
