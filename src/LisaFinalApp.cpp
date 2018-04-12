@@ -7,7 +7,7 @@
 #include "jsoncpp/json.h"
 #include <fstream>
 #include <ctime>
-
+#include "kat_decision_tree.h"
 
 using namespace ci;
 using namespace ci::app;
@@ -80,26 +80,12 @@ private:
 	float dist4 = 0.0;
 	float dist5 = 0.0;
 
-	// points for 1st person pentagon
-	vec2 pointA1;
-	vec2 pointA2;
-	vec2 pointA3;
-	vec2 pointA4;
-	vec2 pointA5;
-
-	// points for 2nd person pentagon
-	vec2 pointB1;
-	vec2 pointB2;
-	vec2 pointB3;
-	vec2 pointB4;
-	vec2 pointB5;
-
-	// points for 3rd person pentagon
-	vec2 pointC1;
-	vec2 pointC2;
-	vec2 pointC3;
-	vec2 pointC4;
-	vec2 pointC5;
+	// points for drawing pentagons
+	vec2 point1;
+	vec2 point2;
+	vec2 point3;
+	vec2 point4;
+	vec2 point5;
 
 	bool mFullScreen = true;
 	bool mShowParams = true;
@@ -254,9 +240,7 @@ void LisaFinalApp::update()
 
 void LisaFinalApp::keyDown(KeyEvent event) {
 	if (event.getChar() == 'a') {
-		osc::Message msg("/Case_1");
-		msg.append(1);
-		mSender.send(msg);
+		
 	}
 	else if (event.getChar() == '2') {
 		osc::Message msg("/Case_2");
@@ -329,13 +313,6 @@ void LisaFinalApp::draw()
 					numB4 = (map.at(JointType_HipRight).getPosition() + map.at(JointType_KneeRight).getPosition() + map.at(JointType_AnkleRight).getPosition() + map.at(JointType_FootRight).getPosition()) / vec3(4);
 					numB5 = (map.at(JointType_HipLeft).getPosition() + map.at(JointType_KneeLeft).getPosition() + map.at(JointType_AnkleLeft).getPosition() + map.at(JointType_FootLeft).getPosition()) / vec3(4);
 
-					// calculate distances
-					dist1 = sqrt(math<float>::pow(numA1.x - numB1.x, 2) + math<float>::pow(numA1.y - numB1.y, 2) + math<float>::pow(numA1.z - numB1.z, 2));
-					dist2 = sqrt(math<float>::pow(numA2.x - numB2.x, 2) + math<float>::pow(numA2.y - numB2.y, 2) + math<float>::pow(numA2.z - numB2.z, 2));
-					dist3 = sqrt(math<float>::pow(numA3.x - numB3.x, 2) + math<float>::pow(numA3.y - numB3.y, 2) + math<float>::pow(numA3.z - numB3.z, 2));
-					dist4 = sqrt(math<float>::pow(numA4.x - numB4.x, 2) + math<float>::pow(numA4.y - numB4.y, 2) + math<float>::pow(numA4.z - numB4.z, 2));
-					dist5 = sqrt(math<float>::pow(numA5.x - numB5.x, 2) + math<float>::pow(numA5.y - numB5.y, 2) + math<float>::pow(numA5.z - numB5.z, 2));
-
 					// TODO: BIG text to indicate whether it thinks its hugging or not
 
 					if (mRecording) {
@@ -401,91 +378,146 @@ void LisaFinalApp::draw()
 					// TODO: for if statements, only put colors, then have one block of code for points, circles, and lines, don't need pointA1, pointB1, pointC1, only point1
 					if (counter == 0) {
 						gl::color(1, 0, 0);
-
-						pointA1 = (headPos + shoulderPos) / vec2(2);
-						gl::drawSolidCircle(pointA1, 5.0f, 32);
-
-
-						pointA2 = (shoulderRPos + elbowRPos + wristRPos + handRPos) / vec2(4);
-						gl::drawSolidCircle(pointA2, 5.0f, 32);
-
-
-						pointA3 = (shoulderLPos + elbowLPos + wristLPos + handLPos) / vec2(4);
-						gl::drawSolidCircle(pointA3, 5.0f, 32);
-
-						pointA4 = (hipRPos + kneeRPos + ankleRPos + footRPos) / vec2(4);
-						gl::drawSolidCircle(pointA4, 5.0f, 32);
-
-						pointA5 = (hipLPos + kneeLPos + ankleLPos + footLPos) / vec2(4);
-						gl::drawSolidCircle(pointA5, 5.0f, 32);
-
-						gl::drawLine(pointA1, pointA2);
-						gl::drawLine(pointA2, pointA4);
-						gl::drawLine(pointA4, pointA5);
-						gl::drawLine(pointA5, pointA3);
-						gl::drawLine(pointA3, pointA1);
 					}
 					// draw pentagon for 2nd person
 					else if (counter == 1) {
 						gl::color(0, 1, 0);
-
-						pointB1 = (headPos + shoulderPos) / vec2(2);
-						gl::drawSolidCircle(pointB1, 5.0f, 32);
-
-
-						pointB2 = (shoulderRPos + elbowRPos + wristRPos + handRPos) / vec2(4);
-						gl::drawSolidCircle(pointB2, 5.0f, 32);
-
-
-						pointB3 = (shoulderLPos + elbowLPos + wristLPos + handLPos) / vec2(4);
-						gl::drawSolidCircle(pointB3, 5.0f, 32);
-
-						pointB4 = (hipRPos + kneeRPos + ankleRPos + footRPos) / vec2(4);
-						gl::drawSolidCircle(pointB4, 5.0f, 32);
-
-						pointB5 = (hipLPos + kneeLPos + ankleLPos + footLPos) / vec2(4);
-						gl::drawSolidCircle(pointB5, 5.0f, 32);
-
-						gl::drawLine(pointB1, pointB2);
-						gl::drawLine(pointB2, pointB4);
-						gl::drawLine(pointB4, pointB5);
-						gl::drawLine(pointB5, pointB3);
-						gl::drawLine(pointB3, pointB1);
 					}
 
 					// draw pentagon for 3rd person
 					else if (counter == 2) {
 						gl::color(0, 0, 1);
-
-						pointC1 = (headPos + shoulderPos) / vec2(2);
-						gl::drawSolidCircle(pointC1, 5.0f, 32);
-
-
-						pointC2 = (shoulderRPos + elbowRPos + wristRPos + handRPos) / vec2(4);
-						gl::drawSolidCircle(pointC2, 5.0f, 32);
-
-
-						pointC3 = (shoulderLPos + elbowLPos + wristLPos + handLPos) / vec2(4);
-						gl::drawSolidCircle(pointC3, 5.0f, 32);
-
-						pointC4 = (hipRPos + kneeRPos + ankleRPos + footRPos) / vec2(4);
-						gl::drawSolidCircle(pointC4, 5.0f, 32);
-
-						pointC5 = (hipLPos + kneeLPos + ankleLPos + footLPos) / vec2(4);
-						gl::drawSolidCircle(pointC5, 5.0f, 32);
-
-						gl::drawLine(pointC1, pointC2);
-						gl::drawLine(pointC2, pointC4);
-						gl::drawLine(pointC4, pointC5);
-						gl::drawLine(pointC5, pointC3);
-						gl::drawLine(pointC3, pointC1);
 					}
+					point1 = (headPos + shoulderPos) / vec2(2);
+					gl::drawSolidCircle(point1, 5.0f, 32);
+
+
+					point2 = (shoulderRPos + elbowRPos + wristRPos + handRPos) / vec2(4);
+					gl::drawSolidCircle(point2, 5.0f, 32);
+
+
+					point3 = (shoulderLPos + elbowLPos + wristLPos + handLPos) / vec2(4);
+					gl::drawSolidCircle(point3, 5.0f, 32);
+
+					point4 = (hipRPos + kneeRPos + ankleRPos + footRPos) / vec2(4);
+					gl::drawSolidCircle(point4, 5.0f, 32);
+
+					point5 = (hipLPos + kneeLPos + ankleLPos + footLPos) / vec2(4);
+					gl::drawSolidCircle(point5, 5.0f, 32);
+
+					gl::drawLine(point1, point2);
+					gl::drawLine(point2, point4);
+					gl::drawLine(point4, point5);
+					gl::drawLine(point5, point3);
+					gl::drawLine(point3, point1);
 				}
 				drawHand(body.getHandLeft(), mDevice->mapCameraToDepth(body.getJointMap().at(JointType_HandLeft).getPosition()));
 				drawHand(body.getHandRight(), mDevice->mapCameraToDepth(body.getJointMap().at(JointType_HandRight).getPosition()));
 
 				counter++;
 			}
+		}
+
+		// if the sensors say they are touching
+		if (mTouching) {
+
+			// if there are only 1 or 0 bodies being detected, most likely it lost tracking which happens during a hug
+			if (mBodyFrame.getBodies().size() < 2) {
+				osc::Message msg("/Case_2");
+				msg.append(1);
+				mSender.send(msg);
+			}
+
+			// compare person A & B
+			else if (mBodyFrame.getBodies().size() == 2) {
+				// calculate distances
+				dist1 = sqrt(math<float>::pow(numA1.x - numB1.x, 2) + math<float>::pow(numA1.y - numB1.y, 2) + math<float>::pow(numA1.z - numB1.z, 2));
+				dist2 = sqrt(math<float>::pow(numA2.x - numB2.x, 2) + math<float>::pow(numA2.y - numB2.y, 2) + math<float>::pow(numA2.z - numB2.z, 2));
+				dist3 = sqrt(math<float>::pow(numA3.x - numB3.x, 2) + math<float>::pow(numA3.y - numB3.y, 2) + math<float>::pow(numA3.z - numB3.z, 2));
+				dist4 = sqrt(math<float>::pow(numA4.x - numB4.x, 2) + math<float>::pow(numA4.y - numB4.y, 2) + math<float>::pow(numA4.z - numB4.z, 2));
+				dist5 = sqrt(math<float>::pow(numA5.x - numB5.x, 2) + math<float>::pow(numA5.y - numB5.y, 2) + math<float>::pow(numA5.z - numB5.z, 2));
+
+				vector<double> distances(5);
+				distances.push_back(dist1);
+				distances.push_back(dist2);
+				distances.push_back(dist3);
+				distances.push_back(dist4);
+				distances.push_back(dist5);
+
+				// return if hugging
+				if (kat_decision_tree(distances) == 0) {
+					osc::Message msg("/Case_2");
+					msg.append(1);
+					mSender.send(msg);
+				}
+				// return if hand holding
+				else if (kat_decision_tree(distances) == 1) {
+					osc::Message msg("/Case_1");
+					msg.append(1);
+					mSender.send(msg);
+				}
+
+			}
+			// if there are 3 (or more) people being detected compare A&B and B&C
+			// doesn't make sense to check A&C since B is inbetween them
+			else {
+				// A&B
+				// calculate distances
+				dist1 = sqrt(math<float>::pow(numA1.x - numB1.x, 2) + math<float>::pow(numA1.y - numB1.y, 2) + math<float>::pow(numA1.z - numB1.z, 2));
+				dist2 = sqrt(math<float>::pow(numA2.x - numB2.x, 2) + math<float>::pow(numA2.y - numB2.y, 2) + math<float>::pow(numA2.z - numB2.z, 2));
+				dist3 = sqrt(math<float>::pow(numA3.x - numB3.x, 2) + math<float>::pow(numA3.y - numB3.y, 2) + math<float>::pow(numA3.z - numB3.z, 2));
+				dist4 = sqrt(math<float>::pow(numA4.x - numB4.x, 2) + math<float>::pow(numA4.y - numB4.y, 2) + math<float>::pow(numA4.z - numB4.z, 2));
+				dist5 = sqrt(math<float>::pow(numA5.x - numB5.x, 2) + math<float>::pow(numA5.y - numB5.y, 2) + math<float>::pow(numA5.z - numB5.z, 2));
+
+				vector<double> distances(5);
+				distances.push_back(dist1);
+				distances.push_back(dist2);
+				distances.push_back(dist3);
+				distances.push_back(dist4);
+				distances.push_back(dist5);
+
+				// return if hugging
+				if (kat_decision_tree(distances) == 0) {
+					osc::Message msg("/Case_2");
+					msg.append(1);
+					mSender.send(msg);
+				}
+				// return if hand holding
+				else if (kat_decision_tree(distances) == 1) {
+					osc::Message msg("/Case_1");
+					msg.append(1);
+					mSender.send(msg);
+				}
+
+				// B&C
+				// calculate distances
+				dist1 = sqrt(math<float>::pow(numC1.x - numB1.x, 2) + math<float>::pow(numC1.y - numB1.y, 2) + math<float>::pow(numC1.z - numB1.z, 2));
+				dist2 = sqrt(math<float>::pow(numC2.x - numB2.x, 2) + math<float>::pow(numC2.y - numB2.y, 2) + math<float>::pow(numC2.z - numB2.z, 2));
+				dist3 = sqrt(math<float>::pow(numC3.x - numB3.x, 2) + math<float>::pow(numC3.y - numB3.y, 2) + math<float>::pow(numC3.z - numB3.z, 2));
+				dist4 = sqrt(math<float>::pow(numC4.x - numB4.x, 2) + math<float>::pow(numC4.y - numB4.y, 2) + math<float>::pow(numC4.z - numB4.z, 2));
+				dist5 = sqrt(math<float>::pow(numC5.x - numB5.x, 2) + math<float>::pow(numC5.y - numB5.y, 2) + math<float>::pow(numC5.z - numB5.z, 2));
+
+				vector<double> distances(5);
+				distances.push_back(dist1);
+				distances.push_back(dist2);
+				distances.push_back(dist3);
+				distances.push_back(dist4);
+				distances.push_back(dist5);
+
+				// return if hugging
+				if (kat_decision_tree(distances) == 0) {
+					osc::Message msg("/Case_2");
+					msg.append(1);
+					mSender.send(msg);
+				}
+				// return if hand holding
+				else if (kat_decision_tree(distances) == 1) {
+					osc::Message msg("/Case_1");
+					msg.append(1);
+					mSender.send(msg);
+				}
+			}
+
 		}
 	}
 
