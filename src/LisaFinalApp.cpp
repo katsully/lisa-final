@@ -4,7 +4,6 @@
 #include "Kinect2.h"
 #include "cinder/params/Params.h"
 #include "cinder/osc/Osc.h"
-#include "jsoncpp/json.h"
 #include <fstream>
 #include <ctime>
 #include "kat_decision_tree.h"
@@ -93,15 +92,12 @@ private:
 	ofstream myfile;
 	bool mRecording = false;
 	bool mTouching = false;
-
-	Json::Value mData;	// to store params
-	Json::Reader mReader;	// this will read the json file where the params are stored and parse it to mData
-	Json::StyledStreamWriter writer;	// write json values back to json file
-	string mGuiParamsFilePath;	// string representing the path to the json gui params file
+	int state = 0; //  0 is hugging, 1 is other
+	int prevState = 0;
+	bool consistentReading = true;
+	int touchingCounter = 0;
 };
 
-// TODO: if osc says they're touching and no data - prob a hug
-// TODO: only run touching alogirthm when get osc data that two people are touching, then figure out whether its hugging, hand holding, or other
 LisaFinalApp::LisaFinalApp() : App(), mReceiver(8010), mSender(8000, destinationHost, destinationPort) {
 	mDevice = Kinect2::Device::create();
 	mDevice->start();
@@ -146,18 +142,6 @@ void LisaFinalApp::setup()
 	std::time_t t = std::time(0);	// get time now
 	std::tm* now = std::localtime(&t);
 
-	//// set up logging file
-	//std::string file_name = "hug_data_" + std::to_string(now->tm_mon + 1) + "-" + std::to_string(now->tm_mday) + "-" + std::to_string(now->tm_hour) + "-" + std::to_string(now->tm_min) +
-	//	".csv";
-	//myfile.open(file_name);
-	//myfile << "Kat's data\n";
-	//myfile << "vertex 1,";
-	//myfile << "vertex 2,";
-	//myfile << "vertex 3,";
-	//myfile << "vertex 4,";
-	//myfile << "vertex 5,";
-	//myfile << "\n";
-
 	// set up OSC
 	mSender.bind();
 	mReceiver.bind();
@@ -169,8 +153,6 @@ void LisaFinalApp::setup()
 		else
 			return true;
 	});
-	// TODO: get OSC from Todd when people are touching, only run algorith then!
-	// when touching determing if hugging or holding hands or OTHER
 	mReceiver.setListener("/touch", [&](const osc::Message &message) {
 		console() << message << endl;
 		if (message[0].int32() == 1.0) {
@@ -179,6 +161,8 @@ void LisaFinalApp::setup()
 		}
 		else if (message[0].int32() == 0.0) {
 			mTouching = false;
+			// reset counter 
+			touchingCounter = 0;
 			console() << "mTouching = " << mTouching << endl;
 		}
 
@@ -195,12 +179,14 @@ void LisaFinalApp::setup()
 	});
 	mReceiver.setListener("/2/push1", [&](const osc::Message &message) {
 		if (message[0].flt() == 1.0) {
-			myfile << "HUG START\n";
+			//myfile << "HUG START\n";
+			mTouching = true;
 		}
 	});
 	mReceiver.setListener("/2/push2", [&](const osc::Message &message) {
 		if (message[0].flt() == 1.0) {
-			myfile << "HUG STOP\n";
+			//myfile << "HUG STOP\n";
+			mTouching = false;
 		}
 	});
 	mReceiver.setListener("/2/push3", [&](const osc::Message &message) {
@@ -291,14 +277,14 @@ void LisaFinalApp::draw()
 		gl::pushMatrices();
 		gl::scale(vec2(getWindowSize()) / vec2(mChannelBodyIndex->getSize()));
 		gl::disable(GL_TEXTURE_2D);
-		int counter = 0;
+		int bodyCounter = 0;
 		for (const Kinect2::Body &body : mBodyFrame.getBodies()) {
 			if (body.isTracked()) {
 				gl::color(ColorAf::white());
 
 				auto map = body.getJointMap();
 
-				if (counter == 0) {
+				if (bodyCounter== 0) {
 					numA1 = (map.at(JointType_Head).getPosition() + map.at(JointType_SpineShoulder).getPosition()) / vec3(2);
 					numA2 = (map.at(JointType_ShoulderRight).getPosition() + map.at(JointType_ElbowRight).getPosition() + map.at(JointType_WristRight).getPosition() + map.at(JointType_HandRight).getPosition()) / vec3(4);
 					numA3 = (map.at(JointType_ShoulderLeft).getPosition() + map.at(JointType_ElbowLeft).getPosition() + map.at(JointType_WristLeft).getPosition() + map.at(JointType_HandLeft).getPosition()) / vec3(4);
@@ -306,7 +292,7 @@ void LisaFinalApp::draw()
 					numA5 = (map.at(JointType_HipLeft).getPosition() + map.at(JointType_KneeLeft).getPosition() + map.at(JointType_AnkleLeft).getPosition() + map.at(JointType_FootLeft).getPosition()) / vec3(4);
 				}
 
-				if (counter == 1) {
+				if (bodyCounter == 1) {
 					numB1 = (map.at(JointType_Head).getPosition() + map.at(JointType_SpineShoulder).getPosition()) / vec3(2);
 					numB2 = (map.at(JointType_ShoulderRight).getPosition() + map.at(JointType_ElbowRight).getPosition() + map.at(JointType_WristRight).getPosition() + map.at(JointType_HandRight).getPosition()) / vec3(4);
 					numB3 = (map.at(JointType_ShoulderLeft).getPosition() + map.at(JointType_ElbowLeft).getPosition() + map.at(JointType_WristLeft).getPosition() + map.at(JointType_HandLeft).getPosition()) / vec3(4);
@@ -329,7 +315,7 @@ void LisaFinalApp::draw()
 				// TODO: calculate distances between A&C and B&C (once a hug is detected between the three break)
 				// TODO: there should be a function that takes two lists of 5 (representing the pentagrams of two people) to detect if they're hugging or not
 
-				if (counter == 2) {
+				if (bodyCounter== 2) {
 					numC1 = (map.at(JointType_Head).getPosition() + map.at(JointType_SpineShoulder).getPosition()) / vec3(2);
 					numC2 = (map.at(JointType_ShoulderRight).getPosition() + map.at(JointType_ElbowRight).getPosition() + map.at(JointType_WristRight).getPosition() + map.at(JointType_HandRight).getPosition()) / vec3(4);
 					numC3 = (map.at(JointType_ShoulderLeft).getPosition() + map.at(JointType_ElbowLeft).getPosition() + map.at(JointType_WristLeft).getPosition() + map.at(JointType_HandLeft).getPosition()) / vec3(4);
@@ -376,16 +362,16 @@ void LisaFinalApp::draw()
 
 					// draw pentagon for 1st person
 					// TODO: for if statements, only put colors, then have one block of code for points, circles, and lines, don't need pointA1, pointB1, pointC1, only point1
-					if (counter == 0) {
+					if (bodyCounter == 0) {
 						gl::color(1, 0, 0);
 					}
 					// draw pentagon for 2nd person
-					else if (counter == 1) {
+					else if (bodyCounter == 1) {
 						gl::color(0, 1, 0);
 					}
 
 					// draw pentagon for 3rd person
-					else if (counter == 2) {
+					else if (bodyCounter == 2) {
 						gl::color(0, 0, 1);
 					}
 					point1 = (headPos + shoulderPos) / vec2(2);
@@ -414,7 +400,7 @@ void LisaFinalApp::draw()
 				drawHand(body.getHandLeft(), mDevice->mapCameraToDepth(body.getJointMap().at(JointType_HandLeft).getPosition()));
 				drawHand(body.getHandRight(), mDevice->mapCameraToDepth(body.getJointMap().at(JointType_HandRight).getPosition()));
 
-				counter++;
+				bodyCounter++;
 			}
 		}
 
@@ -423,9 +409,7 @@ void LisaFinalApp::draw()
 
 			// if there are only 1 or 0 bodies being detected, most likely it lost tracking which happens during a hug
 			if (mBodyFrame.getBodies().size() < 2) {
-				osc::Message msg("/Case_2");
-				msg.append(1);
-				mSender.send(msg);
+				state = 0;
 			}
 
 			// compare person A & B
@@ -446,15 +430,11 @@ void LisaFinalApp::draw()
 
 				// return if hugging
 				if (kat_decision_tree(distances) == 0) {
-					osc::Message msg("/Case_2");
-					msg.append(1);
-					mSender.send(msg);
+					state = 0;
 				}
 				// return if hand holding
 				else if (kat_decision_tree(distances) == 1) {
-					osc::Message msg("/Case_1");
-					msg.append(1);
-					mSender.send(msg);
+					state = 1;
 				}
 
 			}
@@ -478,15 +458,11 @@ void LisaFinalApp::draw()
 
 				// return if hugging
 				if (kat_decision_tree(distances) == 0) {
-					osc::Message msg("/Case_2");
-					msg.append(1);
-					mSender.send(msg);
+					state = 0;
 				}
 				// return if hand holding
 				else if (kat_decision_tree(distances) == 1) {
-					osc::Message msg("/Case_1");
-					msg.append(1);
-					mSender.send(msg);
+					state = 1;
 				}
 
 				// B&C
@@ -497,7 +473,7 @@ void LisaFinalApp::draw()
 				dist4 = sqrt(math<float>::pow(numC4.x - numB4.x, 2) + math<float>::pow(numC4.y - numB4.y, 2) + math<float>::pow(numC4.z - numB4.z, 2));
 				dist5 = sqrt(math<float>::pow(numC5.x - numB5.x, 2) + math<float>::pow(numC5.y - numB5.y, 2) + math<float>::pow(numC5.z - numB5.z, 2));
 
-				vector<double> distances(5);
+				distances.clear();
 				distances.push_back(dist1);
 				distances.push_back(dist2);
 				distances.push_back(dist3);
@@ -506,16 +482,35 @@ void LisaFinalApp::draw()
 
 				// return if hugging
 				if (kat_decision_tree(distances) == 0) {
-					osc::Message msg("/Case_2");
-					msg.append(1);
-					mSender.send(msg);
+					state = 0;
 				}
 				// return if hand holding
 				else if (kat_decision_tree(distances) == 1) {
-					osc::Message msg("/Case_1");
-					msg.append(1);
-					mSender.send(msg);
+					state = 1;
 				}
+			}
+
+			if (state == 0 && prevState == 0) {
+				touchingCounter += 1;
+				if (touchingCounter > 20) {
+					osc::Message msg("/Case_2");
+					msg.append(2);
+					mSender.send(msg);
+					mTouching = false;
+				}
+			}
+			else if (state == 1 && prevState == 1) {
+				touchingCounter += 1;
+				if (touchingCounter > 20) {
+					osc::Message msg("/Case_1");
+					msg.append(2);
+					mSender.send(msg);
+					mTouching = false;
+				}
+			}
+			else {
+				prevState = state;
+				touchingCounter = 0;
 			}
 
 		}
