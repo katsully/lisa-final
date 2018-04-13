@@ -86,7 +86,7 @@ private:
 	bool mFullScreen = true;
 	bool mShowParams = true;
 
-	ofstream myfile;
+	//ofstream myfile;
 	bool mRecording = false;
 	bool mTouching = false;
 	int state = 0; //  0 is hugging, 1 is other
@@ -184,22 +184,22 @@ void LisaFinalApp::setup()
 	});
 	mReceiver.setListener("/2/push3", [&](const osc::Message &message) {
 		if (message[0].flt() == 1.0) {
-			myfile << "HAND START\n";
+			//myfile << "HAND START\n";
 		}
 	});
 	mReceiver.setListener("/2/push4", [&](const osc::Message &message) {
 		if (message[0].flt() == 1.0) {
-			myfile << "HAND STOP\n";
+			//myfile << "HAND STOP\n";
 		}
 	});
 	mReceiver.setListener("/2/push5", [&](const osc::Message &message) {
 		if (message[0].flt() == 1.0) {
-			myfile << "OTHER START\n";
+			//myfile << "OTHER START\n";
 		}
 	});
 	mReceiver.setListener("/2/push6", [&](const osc::Message &message) {
 		if (message[0].flt() == 1.0) {
-			myfile << "OTHER STOP\n";
+			//myfile << "OTHER STOP\n";
 		}
 	});
 
@@ -275,14 +275,14 @@ void LisaFinalApp::draw()
 
 					// TODO: BIG text to indicate whether it thinks its hugging or not
 
-					if (mRecording) {
+					/*if (mRecording) {
 						myfile << to_string(dist1) + ",";
 						myfile << to_string(dist2) + ",";
 						myfile << to_string(dist3) + ",";
 						myfile << to_string(dist4) + ",";
 						myfile << to_string(dist5) + ",";
 						myfile << "\n";
-					}
+					}*/
 
 				}
 
@@ -498,7 +498,7 @@ void LisaFinalApp::draw()
 
 void LisaFinalApp::shutdown() {
 	mDevice->stop();
-	myfile.close();
+	//myfile.close();
 }
 
 CINDER_APP(LisaFinalApp, RendererGl)
