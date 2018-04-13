@@ -395,12 +395,21 @@ void LisaFinalApp::draw()
 				dist4 = sqrt(math<float>::pow(numA4.x - numB4.x, 2) + math<float>::pow(numA4.y - numB4.y, 2) + math<float>::pow(numA4.z - numB4.z, 2));
 				dist5 = sqrt(math<float>::pow(numA5.x - numB5.x, 2) + math<float>::pow(numA5.y - numB5.y, 2) + math<float>::pow(numA5.z - numB5.z, 2));
 
+				console() << "START~~~" << endl;
+				console() << "dist 1 " << dist1 << endl;
+				console() << "dist 2 " << dist2 << endl;
+				console() << "dist 3 " << dist3 << endl;
+				console() << "dist 4 " << dist4 << endl;
+				console() << "dist 5 " << dist5 << endl;
+
 				vector<double> distances(5);
 				distances.push_back(dist1);
 				distances.push_back(dist2);
 				distances.push_back(dist3);
 				distances.push_back(dist4);
 				distances.push_back(dist5);
+
+				console() << "decision tree " << kat_decision_tree(distances) << endl;
 
 				// return if hugging
 				if (kat_decision_tree(distances) == 0) {
@@ -410,7 +419,7 @@ void LisaFinalApp::draw()
 				else if (kat_decision_tree(distances) == 1) {
 					state = 1;
 				}
-
+				distances.clear();
 			}
 			// if there are 3 (or more) people being detected compare A&B and B&C
 			// doesn't make sense to check A&C since B is inbetween them
@@ -466,7 +475,7 @@ void LisaFinalApp::draw()
 
 			if (state == 0 && prevState == 0) {
 				touchingCounter += 1;
-				if (touchingCounter > 20) {
+				if (touchingCounter > 100) {
 					osc::Message msg("/Case_2");
 					msg.append(2);
 					mSender.send(msg);
@@ -475,7 +484,7 @@ void LisaFinalApp::draw()
 			}
 			else if (state == 1 && prevState == 1) {
 				touchingCounter += 1;
-				if (touchingCounter > 20) {
+				if (touchingCounter > 100) {
 					osc::Message msg("/Case_1");
 					msg.append(2);
 					mSender.send(msg);
