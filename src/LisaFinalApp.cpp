@@ -477,7 +477,6 @@ void LisaFinalApp::draw()
 				touchingCounter += 1;
 				if (touchingCounter > 100) {
 					osc::Message msg("/Case_2");
-					msg.append(2);
 					mSender.send(msg);
 					mTouching = false;
 				}
@@ -486,9 +485,9 @@ void LisaFinalApp::draw()
 				touchingCounter += 1;
 				if (touchingCounter > 100) {
 					osc::Message msg("/Case_1");
-					msg.append(2);
 					mSender.send(msg);
 					mTouching = false;
+					console() << "CASE FFREAKING ONE" << endl;
 				}
 			}
 			else {
