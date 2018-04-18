@@ -18,7 +18,13 @@ It returns index of predicted class:
 Simply include this file to your project and use it
 */
 
+#include "cinder/app/App.h"
+#include "cinder/app/RendererGl.h"
 #include <vector>
+
+using namespace ci;
+using namespace ci::app;
+using namespace std;
 
 inline int kat_decision_tree(const std::vector<double> & feature_vector) 
 {

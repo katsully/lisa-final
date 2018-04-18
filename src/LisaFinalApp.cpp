@@ -83,8 +83,8 @@ private:
 	vec2 point4;
 	vec2 point5;
 
-	bool mFullScreen = true;
-	bool mShowParams = true;
+	bool mFullScreen = false;
+	bool mShowParams = false;
 
 	//ofstream myfile;
 	bool mRecording = false;
@@ -111,6 +111,15 @@ LisaFinalApp::LisaFinalApp() : App(), mReceiver(8010), mSender(8000, destination
 
 void LisaFinalApp::setup()
 {
+	//vector<double> test{ 0.625584,  0.539623 , 0.539695 ,0.535022, 0.55904 };
+	/*vector<double> test;
+	test.push_back(0.625);
+	console() << test[0] << endl;
+	test.clear();
+	test.push_back(25);
+	console() << test[0] << endl;*/
+	//console() << kat_decision_tree(test) << endl;
+	
 	setFullScreen(mFullScreen);
 
 	// create a parameter interface and name it
@@ -381,13 +390,25 @@ void LisaFinalApp::draw()
 		// if the sensors say they are touching
 		if (mTouching) {
 
+			console() << "touching" << endl;
+			
+			int counterBod = 0;
+			for (const Kinect2::Body &body : mBodyFrame.getBodies()) {
+				if (body.isTracked()) {
+					counterBod += 1;
+				}
+			}
+
+			console() << "number of bodies " << counterBod << endl;
+
 			// if there are only 1 or 0 bodies being detected, most likely it lost tracking which happens during a hug
-			if (mBodyFrame.getBodies().size() < 2) {
+			if (counterBod < 2) {
+				console() << "0 or 1 bodies" << endl;
 				state = 0;
 			}
 
 			// compare person A & B
-			else if (mBodyFrame.getBodies().size() == 2) {
+			else if (counterBod == 2) {
 				// calculate distances
 				dist1 = sqrt(math<float>::pow(numA1.x - numB1.x, 2) + math<float>::pow(numA1.y - numB1.y, 2) + math<float>::pow(numA1.z - numB1.z, 2));
 				dist2 = sqrt(math<float>::pow(numA2.x - numB2.x, 2) + math<float>::pow(numA2.y - numB2.y, 2) + math<float>::pow(numA2.z - numB2.z, 2));
@@ -402,14 +423,16 @@ void LisaFinalApp::draw()
 				console() << "dist 4 " << dist4 << endl;
 				console() << "dist 5 " << dist5 << endl;
 
-				vector<double> distances(5);
+				vector<double> distances;
 				distances.push_back(dist1);
 				distances.push_back(dist2);
 				distances.push_back(dist3);
 				distances.push_back(dist4);
 				distances.push_back(dist5);
 
-				console() << "decision tree " << kat_decision_tree(distances) << endl;
+				/*console() << "first in list " <<  distances[0] << endl;
+				console() << "last in list " << distances[4] << endl;
+				console() << "decision tree " << kat_decision_tree(distances) << endl;*/
 
 				// return if hugging
 				if (kat_decision_tree(distances) == 0) {
@@ -424,6 +447,8 @@ void LisaFinalApp::draw()
 			// if there are 3 (or more) people being detected compare A&B and B&C
 			// doesn't make sense to check A&C since B is inbetween them
 			else {
+
+				console() << "three bodies" << endl;
 				// A&B
 				// calculate distances
 				dist1 = sqrt(math<float>::pow(numA1.x - numB1.x, 2) + math<float>::pow(numA1.y - numB1.y, 2) + math<float>::pow(numA1.z - numB1.z, 2));
@@ -432,7 +457,7 @@ void LisaFinalApp::draw()
 				dist4 = sqrt(math<float>::pow(numA4.x - numB4.x, 2) + math<float>::pow(numA4.y - numB4.y, 2) + math<float>::pow(numA4.z - numB4.z, 2));
 				dist5 = sqrt(math<float>::pow(numA5.x - numB5.x, 2) + math<float>::pow(numA5.y - numB5.y, 2) + math<float>::pow(numA5.z - numB5.z, 2));
 
-				vector<double> distances(5);
+				vector<double> distances;
 				distances.push_back(dist1);
 				distances.push_back(dist2);
 				distances.push_back(dist3);
@@ -479,6 +504,7 @@ void LisaFinalApp::draw()
 					osc::Message msg("/Case_2");
 					mSender.send(msg);
 					mTouching = false;
+					console() << "CASE TWO" << endl;
 				}
 			}
 			else if (state == 1 && prevState == 1) {
