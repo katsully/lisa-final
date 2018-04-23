@@ -5,7 +5,7 @@
 #include "cinder/params/Params.h"
 #include "cinder/osc/Osc.h"
 #include <fstream>
-#include <ctime>
+//#include <ctime>
 #include "kat_decision_tree.h"
 
 using namespace ci;
@@ -19,7 +19,7 @@ using Sender = osc::SenderUdp;
 using Receiver = osc::ReceiverUdp;
 using protocol = asio::ip::udp;
 #else
-using Sender = osc::SenderTcp;
+using Sender = osc::SenderTcp; 
 using Receiver = osc::ReceiverTcp;
 using protocol = asio::ip::tcp;
 #endif
@@ -46,8 +46,8 @@ private:
 	ci::Channel16uRef mChannelDepth;
 
 	params::InterfaceGlRef mParams;
-	bool mDrawBackground = true;
-	bool mDrawSkeleton = true;
+	bool mDrawBackground = false;
+	bool mDrawSkeleton = false;
 	bool mDrawPentagon = true;
 
 	// math
@@ -87,8 +87,8 @@ private:
 	bool mShowParams = false;
 
 	//ofstream myfile;
-	bool mRecording = false;
-	bool mTouching = false;
+	//bool mRecording = false;
+	bool mTouching, mTouchingAB, mTouchingBC = false;
 	int state = 0; //  0 is hugging, 1 is other
 	int prevState = 0;
 	bool consistentReading = true;
@@ -145,8 +145,8 @@ void LisaFinalApp::setup()
 
 	// TODO - param button to quit
 
-	std::time_t t = std::time(0);	// get time now
-	std::tm* now = std::localtime(&t);
+	//std::time_t t = std::time(0);	// get time now
+	//std::tm* now = std::localtime(&t);
 
 	// set up OSC
 	mSender.bind();
@@ -170,47 +170,65 @@ void LisaFinalApp::setup()
 		}
 
 	});
-	mReceiver.setListener("/1/toggle1", [&](const osc::Message &message) {
-		if (message[0].int32() == 1) {
-			mRecording = true;
-		}
-		else if (message[0].int32() == 0) {
-			mRecording = false;
-		}
-	
-	});
-	mReceiver.setListener("/2/push1", [&](const osc::Message &message) {
+	mReceiver.setListener("/bc", [&](const osc::Message &message) {
 		if (message[0].flt() == 1.0) {
-			//myfile << "HUG START\n";
-			mTouching = true;
+			mTouchingBC = true;
 		}
+		else if (message[0].flt() == 0.0) {
+			mTouchingBC = false;
+		}
+
 	});
-	mReceiver.setListener("/2/push2", [&](const osc::Message &message) {
+	mReceiver.setListener("/ab", [&](const osc::Message &message) {
 		if (message[0].flt() == 1.0) {
-			//myfile << "HUG STOP\n";
-			mTouching = false;
+			mTouchingAB = true;
 		}
-	});
-	mReceiver.setListener("/2/push3", [&](const osc::Message &message) {
-		if (message[0].flt() == 1.0) {
-			//myfile << "HAND START\n";
+		else if (message[0].flt() == 0.0) {
+			mTouchingAB = false;
 		}
+
 	});
-	mReceiver.setListener("/2/push4", [&](const osc::Message &message) {
-		if (message[0].flt() == 1.0) {
-			//myfile << "HAND STOP\n";
-		}
-	});
-	mReceiver.setListener("/2/push5", [&](const osc::Message &message) {
-		if (message[0].flt() == 1.0) {
-			//myfile << "OTHER START\n";
-		}
-	});
-	mReceiver.setListener("/2/push6", [&](const osc::Message &message) {
-		if (message[0].flt() == 1.0) {
-			//myfile << "OTHER STOP\n";
-		}
-	});
+	//mReceiver.setListener("/1/toggle1", [&](const osc::Message &message) {
+	//	if (message[0].int32() == 1) {
+	//		mRecording = true;
+	//	}
+	//	else if (message[0].int32() == 0) {
+	//		mRecording = false;
+	//	}
+	//
+	//});
+	//mReceiver.setListener("/2/push1", [&](const osc::Message &message) {
+	//	if (message[0].flt() == 1.0) {
+	//		//myfile << "HUG START\n";
+	//		mTouching = true;
+	//	}
+	//});
+	//mReceiver.setListener("/2/push2", [&](const osc::Message &message) {
+	//	if (message[0].flt() == 1.0) {
+	//		//myfile << "HUG STOP\n";
+	//		mTouching = false;
+	//	}
+	//});
+	//mReceiver.setListener("/2/push3", [&](const osc::Message &message) {
+	//	if (message[0].flt() == 1.0) {
+	//		//myfile << "HAND START\n";
+	//	}
+	//});
+	//mReceiver.setListener("/2/push4", [&](const osc::Message &message) {
+	//	if (message[0].flt() == 1.0) {
+	//		//myfile << "HAND STOP\n";
+	//	}
+	//});
+	//mReceiver.setListener("/2/push5", [&](const osc::Message &message) {
+	//	if (message[0].flt() == 1.0) {
+	//		//myfile << "OTHER START\n";
+	//	}
+	//});
+	//mReceiver.setListener("/2/push6", [&](const osc::Message &message) {
+	//	if (message[0].flt() == 1.0) {
+	//		//myfile << "OTHER STOP\n";
+	//	}
+	//});
 
 }
 
@@ -416,12 +434,7 @@ void LisaFinalApp::draw()
 				dist4 = sqrt(math<float>::pow(numA4.x - numB4.x, 2) + math<float>::pow(numA4.y - numB4.y, 2) + math<float>::pow(numA4.z - numB4.z, 2));
 				dist5 = sqrt(math<float>::pow(numA5.x - numB5.x, 2) + math<float>::pow(numA5.y - numB5.y, 2) + math<float>::pow(numA5.z - numB5.z, 2));
 
-				console() << "START~~~" << endl;
-				console() << "dist 1 " << dist1 << endl;
-				console() << "dist 2 " << dist2 << endl;
-				console() << "dist 3 " << dist3 << endl;
-				console() << "dist 4 " << dist4 << endl;
-				console() << "dist 5 " << dist5 << endl;
+				
 
 				vector<double> distances;
 				distances.push_back(dist1);
@@ -449,52 +462,62 @@ void LisaFinalApp::draw()
 			else {
 
 				console() << "three bodies" << endl;
-				// A&B
-				// calculate distances
-				dist1 = sqrt(math<float>::pow(numA1.x - numB1.x, 2) + math<float>::pow(numA1.y - numB1.y, 2) + math<float>::pow(numA1.z - numB1.z, 2));
-				dist2 = sqrt(math<float>::pow(numA2.x - numB2.x, 2) + math<float>::pow(numA2.y - numB2.y, 2) + math<float>::pow(numA2.z - numB2.z, 2));
-				dist3 = sqrt(math<float>::pow(numA3.x - numB3.x, 2) + math<float>::pow(numA3.y - numB3.y, 2) + math<float>::pow(numA3.z - numB3.z, 2));
-				dist4 = sqrt(math<float>::pow(numA4.x - numB4.x, 2) + math<float>::pow(numA4.y - numB4.y, 2) + math<float>::pow(numA4.z - numB4.z, 2));
-				dist5 = sqrt(math<float>::pow(numA5.x - numB5.x, 2) + math<float>::pow(numA5.y - numB5.y, 2) + math<float>::pow(numA5.z - numB5.z, 2));
+				if (mTouchingAB == true) {
+					// A&B
+					// calculate distances
+					dist1 = sqrt(math<float>::pow(numA1.x - numB1.x, 2) + math<float>::pow(numA1.y - numB1.y, 2) + math<float>::pow(numA1.z - numB1.z, 2));
+					dist2 = sqrt(math<float>::pow(numA2.x - numB2.x, 2) + math<float>::pow(numA2.y - numB2.y, 2) + math<float>::pow(numA2.z - numB2.z, 2));
+					dist3 = sqrt(math<float>::pow(numA3.x - numB3.x, 2) + math<float>::pow(numA3.y - numB3.y, 2) + math<float>::pow(numA3.z - numB3.z, 2));
+					dist4 = sqrt(math<float>::pow(numA4.x - numB4.x, 2) + math<float>::pow(numA4.y - numB4.y, 2) + math<float>::pow(numA4.z - numB4.z, 2));
+					dist5 = sqrt(math<float>::pow(numA5.x - numB5.x, 2) + math<float>::pow(numA5.y - numB5.y, 2) + math<float>::pow(numA5.z - numB5.z, 2));
 
-				vector<double> distances;
-				distances.push_back(dist1);
-				distances.push_back(dist2);
-				distances.push_back(dist3);
-				distances.push_back(dist4);
-				distances.push_back(dist5);
+					vector<double> distances;
+					distances.push_back(dist1);
+					distances.push_back(dist2);
+					distances.push_back(dist3);
+					distances.push_back(dist4);
+					distances.push_back(dist5);
 
-				// return if hugging
-				if (kat_decision_tree(distances) == 0) {
-					state = 0;
+					//console() << "START~~~" << endl;
+					//console() << "dist 1 " << dist1 << endl;
+					//console() << "dist 2 " << dist2 << endl;
+					//console() << "dist 3 " << dist3 << endl;
+					//console() << "dist 4 " << dist4 << endl;
+					//console() << "dist 5 " << dist5 << endl;
+
+					// return if hugging
+					if (kat_decision_tree(distances) == 0) {
+						state = 0;
+					}
+					// return if hand holding
+					else if (kat_decision_tree(distances) == 1) {
+						state = 1;
+					}
 				}
-				// return if hand holding
-				else if (kat_decision_tree(distances) == 1) {
-					state = 1;
-				}
+				else if (mTouchingBC == true) {
+					// B&C
+					// calculate distances
+					dist1 = sqrt(math<float>::pow(numC1.x - numB1.x, 2) + math<float>::pow(numC1.y - numB1.y, 2) + math<float>::pow(numC1.z - numB1.z, 2));
+					dist2 = sqrt(math<float>::pow(numC2.x - numB2.x, 2) + math<float>::pow(numC2.y - numB2.y, 2) + math<float>::pow(numC2.z - numB2.z, 2));
+					dist3 = sqrt(math<float>::pow(numC3.x - numB3.x, 2) + math<float>::pow(numC3.y - numB3.y, 2) + math<float>::pow(numC3.z - numB3.z, 2));
+					dist4 = sqrt(math<float>::pow(numC4.x - numB4.x, 2) + math<float>::pow(numC4.y - numB4.y, 2) + math<float>::pow(numC4.z - numB4.z, 2));
+					dist5 = sqrt(math<float>::pow(numC5.x - numB5.x, 2) + math<float>::pow(numC5.y - numB5.y, 2) + math<float>::pow(numC5.z - numB5.z, 2));
 
-				// B&C
-				// calculate distances
-				dist1 = sqrt(math<float>::pow(numC1.x - numB1.x, 2) + math<float>::pow(numC1.y - numB1.y, 2) + math<float>::pow(numC1.z - numB1.z, 2));
-				dist2 = sqrt(math<float>::pow(numC2.x - numB2.x, 2) + math<float>::pow(numC2.y - numB2.y, 2) + math<float>::pow(numC2.z - numB2.z, 2));
-				dist3 = sqrt(math<float>::pow(numC3.x - numB3.x, 2) + math<float>::pow(numC3.y - numB3.y, 2) + math<float>::pow(numC3.z - numB3.z, 2));
-				dist4 = sqrt(math<float>::pow(numC4.x - numB4.x, 2) + math<float>::pow(numC4.y - numB4.y, 2) + math<float>::pow(numC4.z - numB4.z, 2));
-				dist5 = sqrt(math<float>::pow(numC5.x - numB5.x, 2) + math<float>::pow(numC5.y - numB5.y, 2) + math<float>::pow(numC5.z - numB5.z, 2));
+					vector<double> distances;
+					distances.push_back(dist1);
+					distances.push_back(dist2);
+					distances.push_back(dist3);
+					distances.push_back(dist4);
+					distances.push_back(dist5);
 
-				distances.clear();
-				distances.push_back(dist1);
-				distances.push_back(dist2);
-				distances.push_back(dist3);
-				distances.push_back(dist4);
-				distances.push_back(dist5);
-
-				// return if hugging
-				if (kat_decision_tree(distances) == 0) {
-					state = 0;
-				}
-				// return if hand holding
-				else if (kat_decision_tree(distances) == 1) {
-					state = 1;
+					// return if hugging
+					if (kat_decision_tree(distances) == 0) {
+						state = 0;
+					}
+					// return if hand holding
+					else if (kat_decision_tree(distances) == 1) {
+						state = 1;
+					}
 				}
 			}
 
@@ -504,6 +527,8 @@ void LisaFinalApp::draw()
 					osc::Message msg("/Case_2");
 					mSender.send(msg);
 					mTouching = false;
+					mTouchingAB = false;
+					mTouchingBC = false;
 					console() << "CASE TWO" << endl;
 				}
 			}
@@ -513,6 +538,8 @@ void LisaFinalApp::draw()
 					osc::Message msg("/Case_1");
 					mSender.send(msg);
 					mTouching = false;
+					mTouchingAB = false;
+					mTouchingBC = false;
 					console() << "CASE FFREAKING ONE" << endl;
 				}
 			}
