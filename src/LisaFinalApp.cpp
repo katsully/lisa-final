@@ -523,7 +523,7 @@ void LisaFinalApp::draw()
 
 			if (state == 0 && prevState == 0) {
 				touchingCounter += 1;
-				if (touchingCounter > 100) {
+				if (touchingCounter > 25) {
 					osc::Message msg("/Case_2");
 					mSender.send(msg);
 					mTouching = false;
@@ -534,7 +534,7 @@ void LisaFinalApp::draw()
 			}
 			else if (state == 1 && prevState == 1) {
 				touchingCounter += 1;
-				if (touchingCounter > 100) {
+				if (touchingCounter > 25) {
 					osc::Message msg("/Case_1");
 					mSender.send(msg);
 					mTouching = false;
